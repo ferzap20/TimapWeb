@@ -224,7 +224,7 @@ function App() {
             <div className="flex items-center gap-2">
               <img src={logoAlone} alt="TIMAP" className="h-5" />
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded inline-flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                <div className="w-1.5 h-1.5 bg-black-500 rounded-full animate-pulse" />
                 LIVE
               </span>
             </div>
