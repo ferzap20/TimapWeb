@@ -223,7 +223,7 @@ function App() {
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img src={logoAlone} alt="TIMAP" className="h-5" />
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> </span>
+                <p className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> </p>
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded">
                 LIVE</span>
             </div>
