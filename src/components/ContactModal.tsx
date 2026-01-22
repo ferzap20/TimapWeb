@@ -16,7 +16,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
           <Mail className="text-green-500" size={24} />
           <div>
             <p className="text-sm text-gray-400">Contact us at:</p>
-            <p className="text-white font-semibold">support@timap.app</p>
+            <p className="text-white font-semibold">support@timap.live</p>
           </div>
         </div>
 
