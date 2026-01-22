@@ -14,6 +14,8 @@ export interface Match {
   title: string;
   sport: SportType;
   location: string;
+  lat: number | null;
+  lng: number | null;
   date: string;
   time: string;
   max_players: number;

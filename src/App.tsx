@@ -5,7 +5,7 @@
  * Handles match creation, listing, joining, and real-time updates.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Target, Share2, Zap, Plus } from 'lucide-react';
 import { CreateMatchModal } from './components/CreateMatchModal';
 import { MatchDetailsModal } from './components/MatchDetailsModal';
@@ -13,11 +13,12 @@ import { MatchCreatedModal } from './components/MatchCreatedModal';
 import { MatchCard } from './components/MatchCard';
 import { Button } from './components/Button';
 import { Footer } from './components/Footer';
+import { SearchFilters } from './components/SearchFilters';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
 import logoAlone from './Images/logo_alone.png';
 import logo01 from './Images/logo01.png';
-import { Match, MatchWithCount, CreateMatchData } from './types/database';
+import { Match, MatchWithCount, CreateMatchData, SportType } from './types/database';
 import { getUserInfo, setUserName as saveUserName } from './lib/storage';
 import {
   createMatch,
@@ -32,6 +33,8 @@ import {
   deleteMatch
 } from './lib/api';
 import { supabase } from './lib/supabase';
+import { City } from './lib/cities';
+import { calculateHaversineDistance } from './lib/location';
 
 function App() {
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
@@ -49,7 +52,34 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'support'>('home');
 
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
+  const [selectedSport, setSelectedSport] = useState<SportType | null>(null);
+
   const userInfo = getUserInfo();
+
+  const filteredMatches = useMemo(() => {
+    let result = matches;
+
+    if (selectedSport) {
+      result = result.filter(match => match.sport === selectedSport);
+    }
+
+    if (selectedCity && selectedDistance) {
+      result = result.filter(match => {
+        if (!match.lat || !match.lng) return false;
+        const distance = calculateHaversineDistance(
+          selectedCity.lat,
+          selectedCity.lng,
+          match.lat,
+          match.lng
+        );
+        return distance <= selectedDistance;
+      });
+    }
+
+    return result;
+  }, [matches, selectedCity, selectedDistance, selectedSport]);
 
   useEffect(() => {
     loadMatches();
@@ -324,6 +354,16 @@ function App() {
 
           <p className="text-gray-400 mb-8">Join the action happening right now</p>
 
+          <SearchFilters
+            selectedCity={selectedCity}
+            selectedDistance={selectedDistance}
+            selectedSport={selectedSport}
+            onCityChange={setSelectedCity}
+            onDistanceChange={setSelectedDistance}
+            onSportChange={setSelectedSport}
+            matchCount={filteredMatches.length}
+          />
+
           {loading ? (
             <div className="text-center py-12">
               <div className="inline-block w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
@@ -332,9 +372,13 @@ function App() {
             <div className="text-center py-12">
               <p className="text-gray-500">No active matches. Be the first to create one!</p>
             </div>
+          ) : filteredMatches.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No matches found with your current filters. Try adjusting your search.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matches.map((match) => (
+              {filteredMatches.map((match) => (
                 <MatchCard key={match.id} match={match} onJoinClick={handleMatchClick} currentUserId={userInfo.id} />
               ))}
             </div>

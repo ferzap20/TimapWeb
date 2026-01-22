@@ -7,6 +7,7 @@
 
 import { supabase } from './supabase';
 import { Match, Participant, CreateMatchData, MatchWithCount } from '../types/database';
+import { extractCoordinatesFromLocation } from './location';
 
 /**
  * Generate a unique invite code for a match
@@ -34,11 +35,14 @@ export async function createMatch(
   creatorName: string
 ): Promise<Match> {
   const inviteCode = generateInviteCode();
+  const coordinates = extractCoordinatesFromLocation(matchData.location);
 
   const { data, error } = await supabase
     .from('matches')
     .insert({
       ...matchData,
+      lat: coordinates.lat,
+      lng: coordinates.lng,
       creator_id: creatorId,
       creator_name: creatorName,
       invite_code: inviteCode
