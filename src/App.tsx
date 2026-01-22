@@ -223,9 +223,9 @@ function App() {
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img src={logoAlone} alt="TIMAP" className="h-5" />
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> </div>
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> 
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded inline-flex items-left gap-1.5">LIVE</span>
-           
+           </div>
             <nav className="flex items-center gap-6">
               <button onClick={() => setCurrentPage('about')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
                 ABOUT
