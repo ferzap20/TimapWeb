@@ -70,11 +70,13 @@ export async function createMatch(
 /**
  * Get all active matches with participant counts
  * Orders by date ascending
+ * Excludes private matches
  */
 export async function getMatches(): Promise<MatchWithCount[]> {
   const { data: matches, error: matchError } = await supabase
     .from('matches')
     .select('*')
+    .eq('is_private', false)
     .gte('date', new Date().toISOString().split('T')[0])
     .order('date', { ascending: true })
     .order('time', { ascending: true });
@@ -244,11 +246,13 @@ export async function updateMatch(matchId: string, updates: Partial<CreateMatchD
 
 /**
  * Get total count of active matches
+ * Only counts public matches
  */
 export async function getActiveMatchCount(): Promise<number> {
   const { count, error } = await supabase
     .from('matches')
     .select('*', { count: 'exact', head: true })
+    .eq('is_private', false)
     .gte('date', new Date().toISOString().split('T')[0]);
 
   if (error) throw error;
@@ -257,11 +261,13 @@ export async function getActiveMatchCount(): Promise<number> {
 
 /**
  * Get total count of online players (participants in active matches)
+ * Only counts players in public matches
  */
 export async function getOnlinePlayerCount(): Promise<number> {
   const { data: matches } = await supabase
     .from('matches')
     .select('id')
+    .eq('is_private', false)
     .gte('date', new Date().toISOString().split('T')[0]);
 
   if (!matches || matches.length === 0) return 0;

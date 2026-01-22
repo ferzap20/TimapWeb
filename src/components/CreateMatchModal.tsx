@@ -10,7 +10,7 @@ import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
 import { SportType, CreateMatchData } from '../types/database';
-import { Trophy, MapPin } from 'lucide-react';
+import { Trophy, MapPin, Lock, Globe } from 'lucide-react';
 import { FootballIcon, BasketballIcon, TennisIcon, BaseballIcon, VolleyballIcon, OtherIcon } from './SportIcons';
 
 interface CreateMatchModalProps {
@@ -38,7 +38,8 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
     time: '',
     max_players: 10,
     captain_name: '',
-    price_per_person: 0
+    price_per_person: 0,
+    is_private: false
   });
 
   const handleOpenMaps = () => {
@@ -100,7 +101,8 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
         time: '',
         max_players: 10,
         captain_name: '',
-        price_per_person: 0
+        price_per_person: 0,
+        is_private: false
       });
       onClose();
     } catch (error) {
@@ -230,6 +232,43 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
             min={0}
             step={5}
           />
+
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase text-gray-400 tracking-wide">
+              Match Privacy
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_private: false })}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                  !formData.is_private
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                <Globe size={18} />
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, is_private: true })}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                  formData.is_private
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                <Lock size={18} />
+                Private
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {formData.is_private
+                ? 'Private matches are hidden from search. Share the link to invite players.'
+                : 'Public matches appear in search results for everyone.'}
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <Button

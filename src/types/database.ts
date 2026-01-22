@@ -24,6 +24,7 @@ export interface Match {
   captain_name: string;
   price_per_person: number;
   invite_code: string;
+  is_private: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -55,4 +56,5 @@ export interface CreateMatchData {
   max_players: number;
   captain_name?: string;
   price_per_person?: number;
+  is_private?: boolean;
 }
