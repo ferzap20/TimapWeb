@@ -53,6 +53,11 @@ function validateDate(date: string): void {
   if (date < today) {
     throw new PastDateError();
   }
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  if (date > maxDate.toISOString().split('T')[0]) {
+    throw new PastDateError();
+  }
 }
 
 export async function createMatch(
