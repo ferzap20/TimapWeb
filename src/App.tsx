@@ -14,6 +14,7 @@ import { MatchCard } from './components/MatchCard';
 import { Button } from './components/Button';
 import { Footer } from './components/Footer';
 import { SearchFilters } from './components/SearchFilters';
+import { InstallPrompt } from './components/InstallPrompt';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
 import logoAlone from './Images/logo_alone.png';
@@ -39,6 +40,7 @@ import {
 import { supabase } from './lib/supabase';
 import { City } from './lib/cities';
 import { calculateHaversineDistance } from './lib/location';
+import { registerServiceWorker } from './lib/pwa';
 
 function App() {
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
@@ -84,6 +86,10 @@ function App() {
 
     return result;
   }, [matches, selectedCity, selectedDistance, selectedSport]);
+
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   useEffect(() => {
     cleanupExpiredMatches().catch(() => {});
@@ -436,6 +442,7 @@ function App() {
       />
 
       <Footer />
+      <InstallPrompt />
     </div>
   );
 }

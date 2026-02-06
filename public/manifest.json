@@ -1,0 +1,32 @@
+{
+  "name": "TIMAP - Find Your Match",
+  "short_name": "TIMAP",
+  "description": "Find players. Create matches. Dominate the field.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Match",
+      "url": "/?action=create",
+      "description": "Create a new sports match"
+    }
+  ],
+  "categories": ["sports", "social"]
+}
