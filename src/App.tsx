@@ -286,7 +286,7 @@ function App() {
                 ABOUT
               </button>
               <button onClick={() => setCurrentPage('support')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
-                DONATE
+                Buy Me a Coffee
               </button>
             </nav>
           </div>
