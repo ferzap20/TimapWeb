@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Target, Share2, Zap, Plus } from 'lucide-react';
+import { Target, Share2, Zap, Plus, ClipboardList } from 'lucide-react';
 import { CreateMatchModal } from './components/CreateMatchModal';
 import { MatchDetailsModal } from './components/MatchDetailsModal';
 import { MatchCreatedModal } from './components/MatchCreatedModal';
@@ -10,6 +10,7 @@ import { SearchFilters } from './components/SearchFilters';
 import { InstallPrompt } from './components/InstallPrompt';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
+import { MyMatchesPage } from './pages/MyMatchesPage';
 import logoAlone from './Images/logo_alone.png';
 import logo01 from './Images/logo01.png';
 import { Match, MatchWithCount, CreateMatchData, SportType } from './types/database';
@@ -17,6 +18,7 @@ import { getUserInfo, setUserName as saveUserName } from './lib/storage';
 import {
   createMatch,
   getMatches,
+  getMyMatches,
   getMatchById,
   getMatchByInviteCode,
   joinMatch,
@@ -37,9 +39,11 @@ import { registerServiceWorker } from './lib/pwa';
 
 function App() {
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
+  const [myMatches, setMyMatches] = useState<MatchWithCount[]>([]);
   const [activeMatchCount, setActiveMatchCount] = useState(3);
   const [totalPlayerCount, setTotalPlayerCount] = useState(16);
   const [loading, setLoading] = useState(true);
+  const [myMatchesLoading, setMyMatchesLoading] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -48,7 +52,7 @@ function App() {
   const [selectedMatch, setSelectedMatch] = useState<MatchWithCount | null>(null);
   const [createdMatch, setCreatedMatch] = useState<Match | null>(null);
 
-  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'support'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'support' | 'mymatches'>('home');
 
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
@@ -93,6 +97,18 @@ function App() {
       setLoading(false);
     }
   }, []);
+
+  const loadMyMatches = useCallback(async () => {
+    try {
+      setMyMatchesLoading(true);
+      const data = await getMyMatches(userInfo.id);
+      setMyMatches(data);
+    } catch (error) {
+      console.error('Error loading my matches:', error);
+    } finally {
+      setMyMatchesLoading(false);
+    }
+  }, [userInfo.id]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -284,6 +300,20 @@ function App() {
     return <SupportPage onBack={() => setCurrentPage('home')} />;
   }
 
+  if (currentPage === 'mymatches') {
+    return (
+      <MyMatchesPage
+        onBack={() => setCurrentPage('home')}
+        matches={myMatches}
+        loading={myMatchesLoading}
+        currentUserId={userInfo.id}
+        onMatchClick={handleMatchClick}
+        onUpdate={handleUpdateMatch}
+        onDelete={handleDeleteMatch}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <div className="relative overflow-hidden">
@@ -297,6 +327,9 @@ function App() {
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded inline-flex items-left gap-1.5">LIVE</span>
             </div>
             <nav aria-label="Main navigation" className="flex items-center gap-6">
+              <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
+                MY MATCHES
+              </button>
               <button onClick={() => setCurrentPage('about')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
                 ABOUT
               </button>
@@ -326,13 +359,22 @@ function App() {
                 Find players. Create matches. Dominate the field.
               </p>
 
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                className="text-lg px-8 py-4 inline-flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Create Match
-              </Button>
+              <div className="flex gap-4 flex-wrap justify-center">
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  className="text-lg px-8 py-4 inline-flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Create Match
+                </Button>
+                <button
+                  onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }}
+                  className="px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-all duration-200 inline-flex items-center gap-2 text-lg"
+                >
+                  <ClipboardList size={20} />
+                  See My Matches
+                </button>
+              </div>
 
               <div className="flex items-center justify-center gap-12 mt-12">
                 <div>

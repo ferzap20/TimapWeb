@@ -325,3 +325,21 @@ export async function getTotalPlayerCount(): Promise<number> {
   if (error) throw error;
   return data || 0;
 }
+
+export async function getMyMatches(creatorId: string): Promise<MatchWithCount[]> {
+  const { data: matches, error: matchError } = await supabase
+    .from('matches')
+    .select('*, participants(count)')
+    .eq('creator_id', creatorId)
+    .gte('date', new Date().toISOString().split('T')[0])
+    .order('date', { ascending: true })
+    .order('time', { ascending: true });
+
+  if (matchError) throw matchError;
+
+  return (matches || []).map((match: any) => ({
+    ...match,
+    participant_count: match.participants?.[0]?.count || 0,
+    participants: undefined
+  }));
+}
