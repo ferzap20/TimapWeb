@@ -79,6 +79,12 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
       return;
     }
 
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.date < today) {
+      alert('Date cannot be in the past');
+      return;
+    }
+
     if (!formData.time) {
       alert('Time is required');
       return;

@@ -14,6 +14,7 @@ import { MatchWithCount } from '../types/database';
 import { Calendar, MapPin, Users, CreditCard, Award, Edit2, Trash2, Save, X, Share2, Plus, Check } from 'lucide-react';
 import { Select } from './Select';
 import { SportType } from '../types/database';
+import { MatchFullError, AlreadyJoinedError, UnauthorizedError } from '../lib/api';
 
 interface MatchDetailsModalProps {
   isOpen: boolean;
@@ -90,8 +91,13 @@ export function MatchDetailsModal({
     try {
       await onJoin(match.id, userName.trim());
     } catch (error) {
-      console.error('Error joining match:', error);
-      alert('Failed to join match. Please try again.');
+      if (error instanceof MatchFullError) {
+        alert('This match is full. No more spots available.');
+      } else if (error instanceof AlreadyJoinedError) {
+        alert('You have already joined this match.');
+      } else {
+        alert('Failed to join match. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -105,8 +111,11 @@ export function MatchDetailsModal({
       }
       setIsEditMode(false);
     } catch (error) {
-      console.error('Error updating match:', error);
-      alert('Failed to update match. Please try again.');
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to edit this match.');
+      } else {
+        alert('Failed to update match. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -124,8 +133,11 @@ export function MatchDetailsModal({
       }
       onClose();
     } catch (error) {
-      console.error('Error deleting match:', error);
-      alert('Failed to delete match. Please try again.');
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to delete this match.');
+      } else {
+        alert('Failed to delete match. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

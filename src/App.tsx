@@ -30,7 +30,10 @@ import {
   getActiveMatchCount,
   getOnlinePlayerCount,
   updateMatch,
-  deleteMatch
+  deleteMatch,
+  MatchFullError,
+  AlreadyJoinedError,
+  UnauthorizedError
 } from './lib/api';
 import { supabase } from './lib/supabase';
 import { City } from './lib/cities';
@@ -114,7 +117,7 @@ function App() {
       matchesSubscription.unsubscribe();
       participantsSubscription.unsubscribe();
     };
-  }, []);
+  }, [selectedMatch?.id]);
 
   const loadMatches = async () => {
     try {
@@ -206,32 +209,46 @@ function App() {
       await loadMatches();
       await loadStats();
     } catch (error) {
-      console.error('Error joining match:', error);
+      if (error instanceof MatchFullError) {
+        alert('This match is already full.');
+      } else if (error instanceof AlreadyJoinedError) {
+        alert('You have already joined this match.');
+      } else {
+        console.error('Error joining match:', error);
+      }
       throw error;
     }
   };
 
   const handleUpdateMatch = async (matchId: string, updates: any) => {
     try {
-      await updateMatch(matchId, updates);
+      await updateMatch(matchId, updates, userInfo.id);
       await refreshSelectedMatch();
       await loadMatches();
       await loadStats();
     } catch (error) {
-      console.error('Error updating match:', error);
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to edit this match.');
+      } else {
+        console.error('Error updating match:', error);
+      }
       throw error;
     }
   };
 
   const handleDeleteMatch = async (matchId: string) => {
     try {
-      await deleteMatch(matchId);
+      await deleteMatch(matchId, userInfo.id);
       setShowDetailsModal(false);
       setSelectedMatch(null);
       await loadMatches();
       await loadStats();
     } catch (error) {
-      console.error('Error deleting match:', error);
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to delete this match.');
+      } else {
+        console.error('Error deleting match:', error);
+      }
       throw error;
     }
   };
