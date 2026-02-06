@@ -33,7 +33,8 @@ import {
   deleteMatch,
   MatchFullError,
   AlreadyJoinedError,
-  UnauthorizedError
+  UnauthorizedError,
+  cleanupExpiredMatches
 } from './lib/api';
 import { supabase } from './lib/supabase';
 import { City } from './lib/cities';
@@ -85,6 +86,7 @@ function App() {
   }, [matches, selectedCity, selectedDistance, selectedSport]);
 
   useEffect(() => {
+    cleanupExpiredMatches().catch(() => {});
     loadMatches();
     loadStats();
 

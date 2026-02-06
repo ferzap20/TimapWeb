@@ -298,6 +298,14 @@ export async function getActiveMatchCount(): Promise<number> {
   return count || 0;
 }
 
+export async function cleanupExpiredMatches(): Promise<void> {
+  const now = new Date();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const cutoffDate = yesterday.toISOString().split('T')[0];
+
+  await supabase.rpc('delete_expired_matches', { cutoff_date: cutoffDate });
+}
+
 export async function getOnlinePlayerCount(): Promise<number> {
   const { data: matches } = await supabase
     .from('matches')
