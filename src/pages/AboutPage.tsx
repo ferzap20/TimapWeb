@@ -1,5 +1,4 @@
 import { ArrowLeft, Users, Share2, Zap, MapPin } from 'lucide-react';
-import { Button } from '../components/Button';
 import { Footer } from '../components/Footer';
 
 interface AboutPageProps {

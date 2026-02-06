@@ -1,10 +1,3 @@
-/**
- * Modal Component
- *
- * Reusable modal/dialog component with backdrop and animations.
- * Handles click-outside-to-close and escape key functionality.
- */
-
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
@@ -17,6 +10,8 @@ interface ModalProps {
   actions?: React.ReactNode;
 }
 
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   isOpen,
   onClose,
@@ -26,22 +21,63 @@ export function Modal({
   actions
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      document.body.style.overflow = 'hidden';
+
+      requestAnimationFrame(() => {
+        const focusable = modalRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (focusable && focusable.length > 0) {
+          focusable[0].focus();
+        }
+      });
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      if (previousFocusRef.current) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = modalRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
@@ -60,6 +96,9 @@ export function Modal({
     >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || 'Dialog'}
         className="relative bg-gray-900 border-2 border-green-500 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-slideUp"
       >
         {(title || showCloseButton || actions) && (

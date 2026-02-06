@@ -76,7 +76,14 @@ export function MatchCard({ match, onJoinClick, currentUserId }: MatchCardProps)
         </div>
       </div>
 
-      <div className="relative w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
+      <div
+        className="relative w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-3"
+        role="progressbar"
+        aria-valuenow={participantCount}
+        aria-valuemin={0}
+        aria-valuemax={match.max_players}
+        aria-label={`${participantCount} of ${match.max_players} players joined`}
+      >
         <div
           className={`absolute top-0 left-0 h-full ${getProgressBarColor()} transition-all duration-300`}
           style={{ width: `${fillPercentage}%` }}

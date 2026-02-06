@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Match, Participant, CreateMatchData, MatchWithCount } from '../types/database';
+import { Match, CreateMatchData, MatchWithCount } from '../types/database';
 import { extractCoordinatesFromLocation } from './location';
 
 export class MatchFullError extends Error {
@@ -182,29 +182,49 @@ export async function joinMatch(
   matchId: string,
   userId: string,
   userName: string
-): Promise<Participant> {
-  const match = await getMatchById(matchId);
+): Promise<string> {
+  const { data, error } = await supabase.rpc('safe_join_match', {
+    p_match_id: matchId,
+    p_user_id: userId,
+    p_user_name: sanitizeInput(userName),
+  });
+
+  if (error) {
+    if (error.message.includes('MATCH_FULL')) throw new MatchFullError();
+    if (error.message.includes('ALREADY_JOINED')) throw new AlreadyJoinedError();
+    if (error.message.includes('MATCH_NOT_FOUND')) throw new MatchNotFoundError();
+    throw error;
+  }
+
+  return data;
+}
+
+export async function addPlayerToMatch(
+  matchId: string,
+  playerName: string,
+  creatorId: string
+): Promise<string> {
+  const { data: match } = await supabase
+    .from('matches')
+    .select('creator_id')
+    .eq('id', matchId)
+    .maybeSingle();
+
   if (!match) throw new MatchNotFoundError();
+  if (match.creator_id !== creatorId) throw new UnauthorizedError();
 
-  const participantCount = match.participant_count || 0;
-  if (participantCount >= match.max_players) throw new MatchFullError();
+  const guestId = `guest_${crypto.randomUUID()}`;
+  const { data, error } = await supabase.rpc('safe_join_match', {
+    p_match_id: matchId,
+    p_user_id: guestId,
+    p_user_name: sanitizeInput(playerName),
+  });
 
-  const alreadyJoined = match.participants?.some(p => p.user_id === userId);
-  if (alreadyJoined) throw new AlreadyJoinedError();
+  if (error) {
+    if (error.message.includes('MATCH_FULL')) throw new MatchFullError();
+    throw error;
+  }
 
-  const { data, error } = await supabase
-    .from('participants')
-    .insert({
-      match_id: matchId,
-      user_id: userId,
-      user_name: sanitizeInput(userName),
-      position: participantCount,
-      is_starter: true
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
   return data;
 }
 
@@ -216,17 +236,6 @@ export async function leaveMatch(matchId: string, userId: string): Promise<void>
     .eq('user_id', userId);
 
   if (error) throw error;
-}
-
-export async function hasJoinedMatch(matchId: string, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('match_id', matchId)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  return !!data;
 }
 
 export async function deleteMatch(matchId: string, creatorId: string): Promise<void> {
@@ -311,22 +320,8 @@ export async function cleanupExpiredMatches(): Promise<void> {
   await supabase.rpc('delete_expired_matches', { cutoff_date: cutoffDate });
 }
 
-export async function getOnlinePlayerCount(): Promise<number> {
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('id')
-    .eq('is_private', false)
-    .gte('date', new Date().toISOString().split('T')[0]);
-
-  if (!matches || matches.length === 0) return 0;
-
-  const matchIds = matches.map(m => m.id);
-
-  const { count, error } = await supabase
-    .from('participants')
-    .select('*', { count: 'exact', head: true })
-    .in('match_id', matchIds);
-
+export async function getTotalPlayerCount(): Promise<number> {
+  const { data, error } = await supabase.rpc('get_active_player_count');
   if (error) throw error;
-  return count || 0;
+  return data || 0;
 }

@@ -145,7 +145,7 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
             <label className="block text-xs font-bold uppercase text-gray-400 tracking-wide">
               Game Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Game type">
               {sports.map((sport) => {
                 const Icon = sport.icon;
                 const isSelected = formData.sport === sport.value;
@@ -153,6 +153,8 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
                   <button
                     key={sport.value}
                     type="button"
+                    role="radio"
+                    aria-checked={isSelected}
                     onClick={() => setFormData({ ...formData, sport: sport.value })}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg font-bold text-sm transition-all ${
                       isSelected

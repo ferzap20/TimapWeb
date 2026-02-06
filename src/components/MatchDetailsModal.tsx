@@ -10,10 +10,9 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
 import { SportBadge } from './SportBadge';
-import { MatchWithCount } from '../types/database';
+import { MatchWithCount, SportType, CreateMatchData } from '../types/database';
 import { Calendar, MapPin, Users, CreditCard, Award, Edit2, Trash2, Save, X, Share2, Plus, Check } from 'lucide-react';
 import { Select } from './Select';
-import { SportType } from '../types/database';
 import { MatchFullError, AlreadyJoinedError, UnauthorizedError } from '../lib/api';
 
 interface MatchDetailsModalProps {
@@ -21,9 +20,9 @@ interface MatchDetailsModalProps {
   onClose: () => void;
   match: MatchWithCount | null;
   onJoin: (matchId: string, userName: string) => Promise<void>;
-  onUpdate?: (matchId: string, updates: any) => Promise<void>;
+  onAddPlayer?: (matchId: string, playerName: string) => Promise<void>;
+  onUpdate?: (matchId: string, updates: Partial<CreateMatchData>) => Promise<void>;
   onDelete?: (matchId: string) => Promise<void>;
-  hasJoined: boolean;
   currentUserName: string;
   currentUserId: string;
 }
@@ -33,9 +32,9 @@ export function MatchDetailsModal({
   onClose,
   match,
   onJoin,
+  onAddPlayer,
   onUpdate,
   onDelete,
-  hasJoined,
   currentUserName,
   currentUserId
 }: MatchDetailsModalProps) {
@@ -179,7 +178,9 @@ export function MatchDetailsModal({
     }
 
     try {
-      await onJoin(match.id, newPlayerName.trim());
+      if (onAddPlayer) {
+        await onAddPlayer(match.id, newPlayerName.trim());
+      }
       setNewPlayerName('');
       setShowAddPlayer(false);
     } catch (error) {
@@ -359,7 +360,7 @@ export function MatchDetailsModal({
                     placeholder="Enter player name"
                     value={newPlayerName}
                     onChange={(e) => setNewPlayerName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
                   />
                   <div className="flex gap-2">
                     <Button

@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SUPPORTED_CITIES, City } from '../lib/cities';
 import { SportType } from '../types/database';
-import { Select } from './Select';
 
 interface SearchFiltersProps {
   selectedCity: City | null;
@@ -35,6 +34,18 @@ export function SearchFilters({
 }: SearchFiltersProps) {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setShowCityDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filteredCities = citySearch
     ? SUPPORTED_CITIES.filter(city =>
@@ -54,9 +65,11 @@ export function SearchFilters({
             <label className="block text-sm font-medium text-gray-300 mb-2">
               City
             </label>
-            <div className="relative">
+            <div className="relative" ref={cityDropdownRef}>
               <button
                 onClick={() => setShowCityDropdown(!showCityDropdown)}
+                aria-expanded={showCityDropdown}
+                aria-haspopup="listbox"
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm hover:border-green-500 transition-colors text-left flex items-center justify-between"
               >
                 <span>{selectedCity ? selectedCity.name : 'Select a city'}</span>
@@ -73,7 +86,7 @@ export function SearchFilters({
                     className="w-full px-3 py-2 bg-gray-700 text-white text-sm placeholder-gray-400 focus:outline-none border-b border-gray-700"
                     autoFocus
                   />
-                  <div className="max-h-48 overflow-y-auto">
+                  <div className="max-h-48 overflow-y-auto" role="listbox" aria-label="Select a city">
                     <button
                       onClick={() => {
                         onCityChange(null);
