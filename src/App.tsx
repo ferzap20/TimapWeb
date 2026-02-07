@@ -392,31 +392,31 @@ function App() {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-gray-400 hover:text-white transition-colors"
+              className="md:hidden text-gray-400 hover:text-white transition-colors z-50"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            <nav aria-label="Main navigation" className={`absolute md:static top-full left-0 right-0 md:right-auto md:top-auto bg-black md:bg-transparent border-b md:border-b-0 border-green-500/30 md:border-0 ${mobileMenuOpen ? 'block' : 'hidden md:flex'} flex-col md:flex-row items-start md:items-center gap-0 md:gap-6 p-4 md:p-0 w-full md:w-auto`}>
+            <nav aria-label="Main navigation" className={`${mobileMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row items-start md:items-center gap-0 md:gap-6 absolute md:static top-16 left-0 right-0 md:top-auto md:left-auto md:right-auto bg-black md:bg-transparent border-b md:border-b-0 border-green-500/30 md:border-0 p-4 md:p-0 w-full md:w-auto z-40`}>
               {user && (
-                <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
+                <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0 block">
                   MY MATCHES
                 </button>
               )}
-              <button onClick={() => { setCurrentPage('about'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
+              <button onClick={() => { setCurrentPage('about'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0 block">
                 ABOUT
               </button>
-              <button onClick={() => { setCurrentPage('support'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
+              <button onClick={() => { setCurrentPage('support'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0 block">
                 Support this project
               </button>
               {user ? (
-                <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase inline-flex items-center gap-2 py-2 md:py-0">
+                <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase inline-flex items-center gap-2 py-2 md:py-0 block">
                   <LogOut size={16} />
                   SIGN OUT
                 </button>
               ) : (
-                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors text-sm uppercase">
+                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors text-sm uppercase block">
                   SIGN IN
                 </button>
               )}
