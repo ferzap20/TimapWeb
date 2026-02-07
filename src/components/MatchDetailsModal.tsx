@@ -10,10 +10,14 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { Input } from './Input';
 import { SportBadge } from './SportBadge';
+import { ParticipantList } from './ParticipantList';
 import { MatchWithCount, SportType, CreateMatchData } from '../types/database';
 import { Calendar, MapPin, Users, CreditCard, Award, Edit2, Trash2, Save, X, Share2, Plus, Check } from 'lucide-react';
 import { Select } from './Select';
 import { MatchFullError, AlreadyJoinedError, UnauthorizedError } from '../lib/api';
+import { showToast } from '../lib/toast';
+import { formatDate } from '../lib/date-utils';
+import { SPORTS } from '../lib/sports-config';
 
 interface MatchDetailsModalProps {
   isOpen: boolean;
@@ -82,20 +86,21 @@ export function MatchDetailsModal({
 
   const handleJoin = async () => {
     if (showNameInput && !userName.trim()) {
-      alert('Please enter your name');
+      showToast.error('Please enter your name');
       return;
     }
 
     setLoading(true);
     try {
       await onJoin(match.id, userName.trim());
+      showToast.success('Successfully joined the match!');
     } catch (error) {
       if (error instanceof MatchFullError) {
-        alert('This match is full. No more spots available.');
+        showToast.error('This match is full. No more spots available.');
       } else if (error instanceof AlreadyJoinedError) {
-        alert('You have already joined this match.');
+        showToast.error('You have already joined this match.');
       } else {
-        alert('Failed to join match. Please try again.');
+        showToast.error('Failed to join match. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -107,13 +112,14 @@ export function MatchDetailsModal({
     try {
       if (onUpdate) {
         await onUpdate(match.id, editData);
+        showToast.success('Match updated successfully!');
       }
       setIsEditMode(false);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
-        alert('You are not authorized to edit this match.');
+        showToast.error('You are not authorized to edit this match.');
       } else {
-        alert('Failed to update match. Please try again.');
+        showToast.error('Failed to update match. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -129,13 +135,14 @@ export function MatchDetailsModal({
     try {
       if (onDelete) {
         await onDelete(match.id);
+        showToast.success('Match deleted successfully');
       }
       onClose();
     } catch (error) {
       if (error instanceof UnauthorizedError) {
-        alert('You are not authorized to delete this match.');
+        showToast.error('You are not authorized to delete this match.');
       } else {
-        alert('Failed to delete match. Please try again.');
+        showToast.error('Failed to delete match. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -158,7 +165,7 @@ export function MatchDetailsModal({
 
   const handleAddPlayer = async () => {
     if (!newPlayerName.trim()) {
-      alert('Please enter a player name');
+      showToast.error('Please enter a player name');
       return;
     }
 
@@ -167,25 +174,26 @@ export function MatchDetailsModal({
     );
 
     if (playerExists) {
-      alert('This player is already in the match');
+      showToast.error('This player is already in the match');
       return;
     }
 
     const participantCount = match.participant_count || 0;
     if (participantCount >= match.max_players) {
-      alert('Match is full');
+      showToast.error('Match is full');
       return;
     }
 
     try {
       if (onAddPlayer) {
         await onAddPlayer(match.id, newPlayerName.trim());
+        showToast.success(`${newPlayerName.trim()} added to the match!`);
       }
       setNewPlayerName('');
       setShowAddPlayer(false);
     } catch (error) {
       console.error('Error adding player:', error);
-      alert('Failed to add player');
+      showToast.error('Failed to add player');
     }
   };
 
@@ -198,10 +206,12 @@ export function MatchDetailsModal({
         title: match.title,
         text,
         url: shareUrl
+      }).catch(() => {
+        // User cancelled share - do nothing
       });
     } else {
       navigator.clipboard.writeText(shareUrl);
-      alert('Match link copied to clipboard');
+      showToast.success('Match link copied to clipboard!');
     }
   };
 
@@ -222,30 +232,11 @@ export function MatchDetailsModal({
     window.open(googleCalendarUrl);
   };
 
-  const formatDate = (dateStr: string, timeStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return `Today at ${timeStr}`;
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return `Tomorrow at ${timeStr}`;
-    } else {
-      const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-      return `${date.toLocaleDateString('en-US', options)} at ${timeStr}`;
-    }
-  };
-
-  const sports = [
-    { value: 'football', label: 'Football' },
-    { value: 'basketball', label: 'Basketball' },
-    { value: 'tennis', label: 'Tennis' },
-    { value: 'baseball', label: 'Baseball' },
-    { value: 'volleyball', label: 'Volleyball' },
-    { value: 'other', label: 'Other' }
-  ];
+  // Convert SPORTS config to Select component format
+  const sportsOptions = SPORTS.map(sport => ({
+    value: sport.value,
+    label: sport.label
+  }));
 
   return (
     <Modal
@@ -258,6 +249,7 @@ export function MatchDetailsModal({
               onClick={() => setIsEditMode(true)}
               className="p-2 bg-gray-800 hover:bg-gray-700 text-green-500 rounded-lg transition-colors"
               title="Edit match"
+              aria-label="Edit match"
             >
               <Edit2 size={18} />
             </button>
@@ -266,6 +258,7 @@ export function MatchDetailsModal({
               disabled={loading}
               className="p-2 bg-gray-800 hover:bg-red-900 text-red-500 rounded-lg transition-colors disabled:opacity-50"
               title="Delete match"
+              aria-label="Delete match"
             >
               <Trash2 size={18} />
             </button>
@@ -287,7 +280,7 @@ export function MatchDetailsModal({
           )}
           {isEditMode ? (
             <Select
-              options={sports}
+              options={sportsOptions}
               value={editData.sport}
               onChange={(e) => setEditData({ ...editData, sport: e.target.value as SportType })}
             />
@@ -348,6 +341,7 @@ export function MatchDetailsModal({
                   onClick={() => setShowAddPlayer(!showAddPlayer)}
                   className="p-1.5 bg-green-500 hover:bg-green-600 text-black rounded-lg transition-colors"
                   title="Add player"
+                  aria-label="Add player to match"
                 >
                   <Plus size={16} />
                 </button>
@@ -384,28 +378,10 @@ export function MatchDetailsModal({
               )}
 
               {match.participants && match.participants.length > 0 && (
-                <div className="space-y-1">
-                  {match.participants
-                    .sort((a, b) => {
-                      const aIsCaptain = a.user_name === editData.captain_name && editData.captain_name;
-                      const bIsCaptain = b.user_name === editData.captain_name && editData.captain_name;
-                      if (aIsCaptain && !bIsCaptain) return -1;
-                      if (!aIsCaptain && bIsCaptain) return 1;
-                      return 0;
-                    })
-                    .map((participant, index) => {
-                      const isCaptain = participant.user_name === editData.captain_name && editData.captain_name;
-                      const displayName = isCaptain ? `${participant.user_name} (C)` : participant.user_name;
-                      return (
-                        <div
-                          key={participant.id}
-                          className="bg-gray-900 rounded px-3 py-2 text-sm text-gray-300"
-                        >
-                          {index + 1}. {displayName || 'Anonymous Player'}
-                        </div>
-                      );
-                    })}
-                </div>
+                <ParticipantList
+                  participants={match.participants}
+                  captainName={editData.captain_name}
+                />
               )}
             </div>
 
@@ -520,28 +496,10 @@ export function MatchDetailsModal({
         {!isEditMode && match.participants && match.participants.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-bold uppercase text-gray-400">Participants</h3>
-            <div className="space-y-1">
-              {match.participants
-                .sort((a, b) => {
-                  const aIsCaptain = a.user_name === match.captain_name && match.captain_name;
-                  const bIsCaptain = b.user_name === match.captain_name && match.captain_name;
-                  if (aIsCaptain && !bIsCaptain) return -1;
-                  if (!aIsCaptain && bIsCaptain) return 1;
-                  return 0;
-                })
-                .map((participant, index) => {
-                  const isCaptain = participant.user_name === match.captain_name && match.captain_name;
-                  const displayName = isCaptain ? `${participant.user_name} (C)` : participant.user_name;
-                  return (
-                    <div
-                      key={participant.id}
-                      className="bg-gray-800 rounded px-3 py-2 text-sm text-gray-300"
-                    >
-                      {index + 1}. {displayName || 'Anonymous Player'}
-                    </div>
-                  );
-                })}
-            </div>
+            <ParticipantList
+              participants={match.participants}
+              captainName={match.captain_name}
+            />
           </div>
         )}
 

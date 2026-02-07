@@ -73,6 +73,7 @@ export function MatchCreatedModal({ isOpen, onClose, match }: MatchCreatedModalP
             onClick={handleCopy}
             className="p-2 hover:bg-gray-700 rounded transition-colors"
             title="Copy link"
+            aria-label={copied ? "Link copied" : "Copy match link"}
           >
             {copied ? (
               <CheckCircle2 className="text-green-500" size={20} />
@@ -83,7 +84,7 @@ export function MatchCreatedModal({ isOpen, onClose, match }: MatchCreatedModalP
         </div>
 
         <div className="flex gap-3">
-          {navigator.share && (
+          {typeof navigator.share === 'function' && (
             <Button
               onClick={handleShare}
               variant="secondary"

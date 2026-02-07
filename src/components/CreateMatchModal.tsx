@@ -9,24 +9,16 @@ import { useState, FormEvent } from 'react';
 import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
-import { SportType, CreateMatchData } from '../types/database';
+import { CreateMatchData } from '../types/database';
 import { Trophy, MapPin, Lock, Globe } from 'lucide-react';
-import { FootballIcon, BasketballIcon, TennisIcon, BaseballIcon, VolleyballIcon, OtherIcon } from './SportIcons';
+import { SPORTS } from '../lib/sports-config';
+import { showToast } from '../lib/toast';
 
 interface CreateMatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateMatchData) => Promise<void>;
 }
-
-const sports: { value: SportType; label: string; icon: any; color: string }[] = [
-  { value: 'football', label: 'Football', icon: FootballIcon, color: 'bg-green-500 hover:bg-green-400' },
-  { value: 'basketball', label: 'Basketball', icon: BasketballIcon, color: 'bg-orange-500 hover:bg-orange-400' },
-  { value: 'tennis', label: 'Tennis/Paddle', icon: TennisIcon, color: 'bg-yellow-500 hover:bg-yellow-400' },
-  { value: 'baseball', label: 'Baseball', icon: BaseballIcon, color: 'bg-blue-500 hover:bg-blue-400' },
-  { value: 'volleyball', label: 'Volleyball', icon: VolleyballIcon, color: 'bg-purple-500 hover:bg-purple-400' },
-  { value: 'other', label: 'Other', icon: OtherIcon, color: 'bg-gray-500 hover:bg-gray-400' }
-];
 
 export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModalProps) {
   const [loading, setLoading] = useState(false);
@@ -65,33 +57,33 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      alert('Match title is required');
+      showToast.error('Match title is required');
       return;
     }
 
     if (!formData.location.trim()) {
-      alert('Location is required');
+      showToast.error('Location is required');
       return;
     }
 
     if (!formData.date) {
-      alert('Date is required');
+      showToast.error('Date is required');
       return;
     }
 
     const today = new Date().toISOString().split('T')[0];
     if (formData.date < today) {
-      alert('Date cannot be in the past');
+      showToast.error('Date cannot be in the past');
       return;
     }
 
     if (!formData.time) {
-      alert('Time is required');
+      showToast.error('Time is required');
       return;
     }
 
     if (!formData.max_players || formData.max_players < 2) {
-      alert('Max players must be at least 2');
+      showToast.error('Max players must be at least 2');
       return;
     }
 
@@ -110,10 +102,11 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
         price_per_person: 0,
         is_private: false
       });
+      showToast.success('Match created successfully!');
       onClose();
     } catch (error) {
       console.error('Error creating match:', error);
-      alert('Failed to create match. Please try again.');
+      showToast.error('Failed to create match. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -146,7 +139,7 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
               Game Type
             </label>
             <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Game type">
-              {sports.map((sport) => {
+              {SPORTS.map((sport) => {
                 const Icon = sport.icon;
                 const isSelected = formData.sport === sport.value;
                 return (

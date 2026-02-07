@@ -36,6 +36,7 @@ import { supabase } from './lib/supabase';
 import { City } from './lib/cities';
 import { calculateHaversineDistance } from './lib/location';
 import { registerServiceWorker } from './lib/pwa';
+import { showToast } from './lib/toast';
 
 function App() {
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
@@ -232,11 +233,12 @@ function App() {
       await loadStats();
     } catch (error) {
       if (error instanceof MatchFullError) {
-        alert('This match is already full.');
+        showToast.error('This match is already full.');
       } else if (error instanceof AlreadyJoinedError) {
-        alert('You have already joined this match.');
+        showToast.error('You have already joined this match.');
       } else {
         console.error('Error joining match:', error);
+        showToast.error('Failed to join match. Please try again.');
       }
       throw error;
     }
@@ -250,10 +252,10 @@ function App() {
       await loadStats();
     } catch (error) {
       if (error instanceof MatchFullError) {
-        alert('This match is already full.');
+        showToast.error('This match is already full.');
       } else {
         console.error('Error adding player:', error);
-        alert('Failed to add player.');
+        showToast.error('Failed to add player.');
       }
       throw error;
     }
@@ -267,9 +269,10 @@ function App() {
       await loadStats();
     } catch (error) {
       if (error instanceof UnauthorizedError) {
-        alert('You are not authorized to edit this match.');
+        showToast.error('You are not authorized to edit this match.');
       } else {
         console.error('Error updating match:', error);
+        showToast.error('Failed to update match. Please try again.');
       }
       throw error;
     }
@@ -284,9 +287,10 @@ function App() {
       await loadStats();
     } catch (error) {
       if (error instanceof UnauthorizedError) {
-        alert('You are not authorized to delete this match.');
+        showToast.error('You are not authorized to delete this match.');
       } else {
         console.error('Error deleting match:', error);
+        showToast.error('Failed to delete match. Please try again.');
       }
       throw error;
     }

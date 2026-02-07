@@ -8,6 +8,7 @@
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { MatchWithCount } from '../types/database';
 import { SportBadge } from './SportBadge';
+import { formatDate } from '../lib/date-utils';
 
 interface MatchCardProps {
   match: MatchWithCount;
@@ -25,22 +26,6 @@ export function MatchCard({ match, onJoinClick, currentUserId }: MatchCardProps)
     if (spotsLeft === 0) return 'bg-red-500';
     if (spotsLeft <= 2) return 'bg-orange-500';
     return 'bg-green-500';
-  };
-
-  const formatDate = (dateStr: string, timeStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return `Today at ${timeStr}`;
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return `Tomorrow at ${timeStr}`;
-    } else {
-      const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-      return `${date.toLocaleDateString('en-US', options)} at ${timeStr}`;
-    }
   };
 
   return (

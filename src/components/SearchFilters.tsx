@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { SUPPORTED_CITIES, City } from '../lib/cities';
 import { SportType } from '../types/database';
+import { SPORTS } from '../lib/sports-config';
 
 interface SearchFiltersProps {
   selectedCity: City | null;
@@ -11,15 +12,6 @@ interface SearchFiltersProps {
   onSportChange: (sport: SportType | null) => void;
   matchCount: number;
 }
-
-const SPORTS: { value: SportType; label: string }[] = [
-  { value: 'football', label: 'Football' },
-  { value: 'basketball', label: 'Basketball' },
-  { value: 'tennis', label: 'Tennis' },
-  { value: 'baseball', label: 'Baseball' },
-  { value: 'volleyball', label: 'Volleyball' },
-  { value: 'other', label: 'Other' }
-];
 
 const DISTANCES = [5, 10, 15, 20, 30, 50];
 
