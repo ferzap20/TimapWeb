@@ -3,15 +3,17 @@
  *
  * Reusable form input with consistent styling.
  * Supports text, date, time, and number input types.
+ * Optional left icon support for enhanced visual feedback.
  */
 
-import { InputHTMLAttributes } from 'react';
+import { InputHTMLAttributes, ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  leftIcon?: ReactNode;
 }
 
-export function Input({ label, className = '', ...props }: InputProps) {
+export function Input({ label, leftIcon, className = '', ...props }: InputProps) {
   return (
     <div className="space-y-2">
       {label && (
@@ -19,10 +21,17 @@ export function Input({ label, className = '', ...props }: InputProps) {
           {label}
         </label>
       )}
-      <input
-        className={`w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors ${className}`}
-        {...props}
-      />
+      <div className="relative">
+        {leftIcon && (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            {leftIcon}
+          </div>
+        )}
+        <input
+          className={`w-full ${leftIcon ? 'pl-12' : 'pl-4'} pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors ${className}`}
+          {...props}
+        />
+      </div>
     </div>
   );
 }

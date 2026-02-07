@@ -9,15 +9,16 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Match } from '../types/database';
-import { CheckCircle2, Copy, Share2 } from 'lucide-react';
+import { CheckCircle2, Copy, Share2, Info } from 'lucide-react';
 
 interface MatchCreatedModalProps {
   isOpen: boolean;
   onClose: () => void;
   match: Match | null;
+  onViewMatch?: () => void;
 }
 
-export function MatchCreatedModal({ isOpen, onClose, match }: MatchCreatedModalProps) {
+export function MatchCreatedModal({ isOpen, onClose, match, onViewMatch }: MatchCreatedModalProps) {
   const [copied, setCopied] = useState(false);
 
   if (!match) return null;
@@ -83,18 +84,30 @@ export function MatchCreatedModal({ isOpen, onClose, match }: MatchCreatedModalP
           </button>
         </div>
 
-        <div className="flex gap-3">
-          {typeof navigator.share === 'function' && (
-            <Button
-              onClick={handleShare}
-              variant="secondary"
-              className="flex-1 flex items-center justify-center gap-2"
-            >
-              <Share2 size={18} />
-              Share
-            </Button>
-          )}
-          <Button onClick={onClose} variant="primary" className="flex-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            {typeof navigator.share === 'function' && (
+              <Button
+                onClick={handleShare}
+                variant="secondary"
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <Share2 size={18} />
+                Share
+              </Button>
+            )}
+            {onViewMatch && (
+              <Button
+                onClick={onViewMatch}
+                variant="secondary"
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <Info size={18} />
+                See Match Info
+              </Button>
+            )}
+          </div>
+          <Button onClick={onClose} variant="primary" className="w-full">
             Let's Go!
           </Button>
         </div>

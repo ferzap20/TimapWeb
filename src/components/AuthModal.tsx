@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
 import { useAuth } from '../lib/auth';
+import { Mail, Lock } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -83,6 +84,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
+              leftIcon={<Mail size={20} />}
               required
             />
           </div>
@@ -97,6 +99,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              leftIcon={<Lock size={20} />}
               required
             />
           </div>
@@ -112,6 +115,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
+                leftIcon={<Lock size={20} />}
                 required
               />
               {password && confirmPassword && password !== confirmPassword && (

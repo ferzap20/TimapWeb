@@ -452,13 +452,14 @@ function App() {
                   Create Match
                 </Button>
                 {user && (
-                  <button
+                  <Button
                     onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }}
-                    className="px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-all duration-200 inline-flex items-center gap-2 text-lg"
+                    variant="secondary"
+                    className="text-lg px-8 py-4 inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 border-orange-600 hover:border-orange-700"
                   >
                     <ClipboardList size={20} />
                     See My Matches
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -584,6 +585,13 @@ function App() {
             setCreatedMatch(null);
           }}
           match={createdMatch}
+          onViewMatch={() => {
+            if (createdMatch) {
+              setSelectedMatch(createdMatch);
+              setShowDetailsModal(true);
+              setShowCreatedModal(false);
+            }
+          }}
         />
 
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
