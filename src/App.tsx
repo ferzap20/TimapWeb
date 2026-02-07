@@ -441,13 +441,15 @@ function App() {
                   <Plus size={20} />
                   Create Match
                 </Button>
-                <button
-                  onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }}
-                  className="px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-all duration-200 inline-flex items-center gap-2 text-lg"
-                >
-                  <ClipboardList size={20} />
-                  See My Matches
-                </button>
+                {user && (
+                  <button
+                    onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }}
+                    className="px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-all duration-200 inline-flex items-center gap-2 text-lg"
+                  >
+                    <ClipboardList size={20} />
+                    See My Matches
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center justify-center gap-12 mt-12">

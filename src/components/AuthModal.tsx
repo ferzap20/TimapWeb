@@ -130,7 +130,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={handleClose}
               disabled={loading}
             >

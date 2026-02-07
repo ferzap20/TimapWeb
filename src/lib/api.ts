@@ -119,7 +119,10 @@ export async function getMatches(): Promise<MatchWithCount[]> {
 
   if (matchError) throw matchError;
 
-  return (matches || []).map((match: any) => ({
+  // Additional client-side filter to ensure no private matches slip through
+  const publicMatches = (matches || []).filter(match => match.is_private === false);
+
+  return publicMatches.map((match: any) => ({
     ...match,
     participant_count: match.participants?.[0]?.count || 0,
     participants: undefined
@@ -331,9 +334,10 @@ export async function getMyMatches(creatorId: string): Promise<MatchWithCount[]>
     .from('matches')
     .select('*, participants(count)')
     .eq('creator_id', creatorId)
-    .gte('date', new Date().toISOString().split('T')[0])
-    .order('date', { ascending: true })
-    .order('time', { ascending: true });
+    // Removed date filter to show all matches including expired ones
+    // This allows users to delete expired matches
+    .order('date', { ascending: false }) // Most recent first
+    .order('time', { ascending: false });
 
   if (matchError) throw matchError;
 
