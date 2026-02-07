@@ -14,6 +14,7 @@ import { MatchWithCount } from '../types/database';
 import { Calendar, MapPin, Users, CreditCard, Award, Edit2, Trash2, Save, X, Share2, Plus, Check } from 'lucide-react';
 import { Select } from './Select';
 import { SportType } from '../types/database';
+import { MatchFullError } from '../lib/api'; // ✅ FIXED: Import MatchFullError
 
 interface MatchDetailsModalProps {
   isOpen: boolean;
@@ -91,7 +92,20 @@ export function MatchDetailsModal({
       await onJoin(match.id, userName.trim());
     } catch (error) {
       console.error('Error joining match:', error);
-      alert('Failed to join match. Please try again.');
+      // ✅ FIXED: Better error messages
+      if (error instanceof MatchFullError) {
+        alert('Sorry, this match is now full!');
+      } else if (error instanceof Error) {
+        if (error.message.includes('full')) {
+          alert('Sorry, this match is now full!');
+        } else if (error.message.includes('already joined')) {
+          alert('You have already joined this match');
+        } else {
+          alert(error.message);
+        }
+      } else {
+        alert('Failed to join match. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,70 +235,75 @@ export function MatchDetailsModal({
       return `Tomorrow at ${timeStr}`;
     } else {
       const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-      return `${date.toLocaleDateString('en-US', options)} at ${timeStr}`;
+      return `${date.toLocaleDateString(undefined, options)} at ${timeStr}`;
     }
   };
 
-  const sports = [
-    { value: 'football', label: 'Football' },
-    { value: 'basketball', label: 'Basketball' },
-    { value: 'tennis', label: 'Tennis' },
-    { value: 'baseball', label: 'Baseball' },
-    { value: 'volleyball', label: 'Volleyball' },
-    { value: 'other', label: 'Other' }
-  ];
-
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      actions={
-        isCreator && !isEditMode ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setIsEditMode(true)}
-              className="p-2 bg-gray-800 hover:bg-gray-700 text-green-500 rounded-lg transition-colors"
-              title="Edit match"
-            >
-              <Edit2 size={18} />
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              className="p-2 bg-gray-800 hover:bg-red-900 text-red-500 rounded-lg transition-colors disabled:opacity-50"
-              title="Delete match"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
-        ) : undefined
-      }
-    >
+    <Modal isOpen={isOpen} onClose={onClose}>
       <div className="space-y-6">
-        <div>
-          {isEditMode ? (
-            <Input
-              type="text"
-              value={editData.title}
-              onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-              className="text-2xl font-bold mb-2"
-            />
-          ) : (
-            <h2 className="text-2xl font-bold text-white mb-2">{match.title}</h2>
-          )}
-          {isEditMode ? (
-            <Select
-              options={sports}
-              value={editData.sport}
-              onChange={(e) => setEditData({ ...editData, sport: e.target.value as SportType })}
-            />
-          ) : (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <SportBadge sport={match.sport} />
+            <div>
+              <h2 className="text-2xl font-bold text-white">{match.title}</h2>
+              <p className="text-sm text-gray-400">Match #{match.invite_code.toUpperCase()}</p>
+            </div>
+          </div>
+          {isCreator && (
+            <div className="flex gap-2">
+              {!isEditMode ? (
+                <>
+                  <button
+                    onClick={() => setIsEditMode(true)}
+                    className="p-2 bg-green-500 hover:bg-green-600 text-black rounded-lg transition-colors"
+                    title="Edit match"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                    title="Delete match"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </>
+              ) : null}
+            </div>
           )}
         </div>
 
         {isEditMode ? (
           <div className="space-y-4">
+            <Input
+              label="Match Title"
+              type="text"
+              value={editData.title}
+              onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+            />
+
+            <Select
+              label="Sport"
+              value={editData.sport}
+              onChange={(e) => setEditData({ ...editData, sport: e.target.value as SportType })}
+              options={[
+                { value: 'football', label: 'Football' },
+                { value: 'basketball', label: 'Basketball' },
+                { value: 'tennis', label: 'Tennis/Paddle' },
+                { value: 'baseball', label: 'Baseball' },
+                { value: 'volleyball', label: 'Volleyball' },
+                { value: 'other', label: 'Other' }
+              ]}
+            />
+
+            <Input
+              label="Location"
+              type="text"
+              value={editData.location}
+              onChange={(e) => setEditData({ ...editData, location: e.target.value })}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Date"
@@ -293,6 +312,7 @@ export function MatchDetailsModal({
                 onChange={(e) => setEditData({ ...editData, date: e.target.value })}
                 min={new Date().toISOString().split('T')[0]}
               />
+
               <Input
                 label="Time"
                 type="time"
@@ -300,35 +320,33 @@ export function MatchDetailsModal({
                 onChange={(e) => setEditData({ ...editData, time: e.target.value })}
               />
             </div>
-            <Input
-              label="Location"
-              type="text"
-              value={editData.location}
-              onChange={(e) => setEditData({ ...editData, location: e.target.value })}
-            />
+
             <Input
               label="Max Players"
               type="number"
               value={editData.max_players}
               onChange={(e) => setEditData({ ...editData, max_players: parseInt(e.target.value) || 0 })}
-              min={participantCount || 2}
+              min={participantCount}
               max={50}
             />
+
             <Input
-              label="Captain Name (Optional)"
+              label="Captain Name"
               type="text"
               value={editData.captain_name}
               onChange={(e) => setEditData({ ...editData, captain_name: e.target.value })}
             />
+
             <Input
-              label="Price Per Person (Optional)"
+              label="Price Per Person"
               type="number"
               value={editData.price_per_person || ''}
               onChange={(e) => setEditData({ ...editData, price_per_person: parseInt(e.target.value) || 0 })}
               min={0}
+              step={5}
             />
 
-            <div className="space-y-2 pt-4 border-t border-gray-700">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold uppercase text-gray-400">Participants</h3>
                 <button

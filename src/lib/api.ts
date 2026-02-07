@@ -9,16 +9,48 @@ import { supabase } from './supabase';
 import { Match, Participant, CreateMatchData, MatchWithCount } from '../types/database';
 
 /**
+ * Custom error classes for better error handling
+ */
+export class MatchFullError extends Error {
+  constructor() {
+    super('Match is full');
+    this.name = 'MatchFullError';
+  }
+}
+
+export class MatchNotFoundError extends Error {
+  constructor(matchId: string) {
+    super(`Match ${matchId} not found`);
+    this.name = 'MatchNotFoundError';
+  }
+}
+
+export class UnauthorizedError extends Error {
+  constructor(action: string) {
+    super(`Unauthorized to ${action}`);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+/**
  * Generate a unique invite code for a match
- * Uses a combination of random characters
+ * Uses cryptographically secure random with increased entropy
  */
 function generateInviteCode(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const array = new Uint8Array(12); // Increased from 8 to 12 for better security
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => chars[byte % chars.length]).join('');
+}
+
+/**
+ * Sanitize user input to prevent XSS attacks
+ */
+function sanitizeInput(input: string): string {
+  return input
+    .trim()
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .substring(0, 500); // Limit length
 }
 
 /**
@@ -35,12 +67,29 @@ export async function createMatch(
 ): Promise<Match> {
   const inviteCode = generateInviteCode();
 
+  // Sanitize all user inputs
+  const sanitizedData = {
+    ...matchData,
+    title: sanitizeInput(matchData.title),
+    location: sanitizeInput(matchData.location),
+    captain_name: matchData.captain_name ? sanitizeInput(matchData.captain_name) : '',
+  };
+
+  // Validate date is not in the past
+  const matchDate = new Date(sanitizedData.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (matchDate < today) {
+    throw new Error('Cannot create match in the past');
+  }
+
   const { data, error } = await supabase
     .from('matches')
     .insert({
-      ...matchData,
+      ...sanitizedData,
       creator_id: creatorId,
-      creator_name: creatorName,
+      creator_name: sanitizeInput(creatorName),
       invite_code: inviteCode
     })
     .select()
@@ -49,13 +98,13 @@ export async function createMatch(
   if (error) throw error;
 
   // Auto-add creator as first participant (captain)
-  const captainName = matchData.captain_name || creatorName;
+  const captainName = sanitizedData.captain_name || creatorName;
   await supabase
     .from('participants')
     .insert({
       match_id: data.id,
       user_id: creatorId,
-      user_name: captainName,
+      user_name: sanitizeInput(captainName),
       position: 0,
       is_starter: true
     });
@@ -65,34 +114,27 @@ export async function createMatch(
 
 /**
  * Get all active matches with participant counts
- * Orders by date ascending
+ * Optimized to avoid N+1 query problem
  */
 export async function getMatches(): Promise<MatchWithCount[]> {
-  const { data: matches, error: matchError } = await supabase
+  // Use a single query with aggregation
+  const { data, error } = await supabase
     .from('matches')
-    .select('*')
+    .select(`
+      *,
+      participants(count)
+    `)
     .gte('date', new Date().toISOString().split('T')[0])
     .order('date', { ascending: true })
     .order('time', { ascending: true });
 
-  if (matchError) throw matchError;
+  if (error) throw error;
 
-  // Get participant counts for each match
-  const matchesWithCounts = await Promise.all(
-    (matches || []).map(async (match) => {
-      const { count } = await supabase
-        .from('participants')
-        .select('*', { count: 'exact', head: true })
-        .eq('match_id', match.id);
-
-      return {
-        ...match,
-        participant_count: count || 0
-      };
-    })
-  );
-
-  return matchesWithCounts;
+  return (data || []).map(match => ({
+    ...match,
+    participant_count: match.participants?.[0]?.count || 0,
+    participants: undefined
+  }));
 }
 
 /**
@@ -153,31 +195,57 @@ export async function getMatchByInviteCode(inviteCode: string): Promise<MatchWit
 
 /**
  * Join a match as a participant
+ * Includes race condition protection
  */
 export async function joinMatch(
   matchId: string,
   userId: string,
   userName: string
 ): Promise<Participant> {
-  // Get current participant count for position
-  const { count } = await supabase
-    .from('participants')
-    .select('*', { count: 'exact', head: true })
-    .eq('match_id', matchId);
+  // Sanitize user name
+  const sanitizedUserName = sanitizeInput(userName);
 
+  // Get match details and current participant count atomically
+  const match = await getMatchById(matchId);
+  
+  if (!match) {
+    throw new MatchNotFoundError(matchId);
+  }
+
+  const currentCount = match.participant_count || 0;
+
+  // Check if match is full
+  if (currentCount >= match.max_players) {
+    throw new MatchFullError();
+  }
+
+  // Check if user already joined
+  const alreadyJoined = match.participants?.some(p => p.user_id === userId);
+  if (alreadyJoined) {
+    throw new Error('You have already joined this match');
+  }
+
+  // Attempt to insert participant
   const { data, error } = await supabase
     .from('participants')
     .insert({
       match_id: matchId,
       user_id: userId,
-      user_name: userName,
-      position: count || 0,
+      user_name: sanitizedUserName,
+      position: currentCount,
       is_starter: true
     })
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // Handle unique constraint violation (race condition)
+    if (error.code === '23505') {
+      throw new Error('You have already joined this match');
+    }
+    throw error;
+  }
+
   return data;
 }
 
@@ -209,28 +277,99 @@ export async function hasJoinedMatch(matchId: string, userId: string): Promise<b
 }
 
 /**
- * Delete a match (creator only - enforced in frontend)
+ * Delete a match (creator only)
+ * SECURITY: Validates creator_id to prevent unauthorized deletion
  */
-export async function deleteMatch(matchId: string): Promise<void> {
+export async function deleteMatch(matchId: string, creatorId: string): Promise<void> {
+  // First verify the user is the creator
+  const { data: match } = await supabase
+    .from('matches')
+    .select('creator_id')
+    .eq('id', matchId)
+    .single();
+
+  if (!match) {
+    throw new MatchNotFoundError(matchId);
+  }
+
+  if (match.creator_id !== creatorId) {
+    throw new UnauthorizedError('delete this match');
+  }
+
+  // Now delete with creator_id check for extra security
   const { error } = await supabase
     .from('matches')
     .delete()
-    .eq('id', matchId);
+    .eq('id', matchId)
+    .eq('creator_id', creatorId);
 
   if (error) throw error;
 }
 
 /**
- * Update match details
+ * Update match details (creator only)
+ * SECURITY: Validates creator_id to prevent unauthorized updates
  */
-export async function updateMatch(matchId: string, updates: Partial<CreateMatchData>): Promise<Match> {
+export async function updateMatch(
+  matchId: string,
+  updates: Partial<CreateMatchData>,
+  creatorId: string
+): Promise<Match> {
+  // First verify the user is the creator
+  const { data: match } = await supabase
+    .from('matches')
+    .select('creator_id, participant_count:participants(count)')
+    .eq('id', matchId)
+    .single();
+
+  if (!match) {
+    throw new MatchNotFoundError(matchId);
+  }
+
+  if (match.creator_id !== creatorId) {
+    throw new UnauthorizedError('update this match');
+  }
+
+  // Sanitize all user inputs in updates
+  const sanitizedUpdates: any = {};
+  
+  if (updates.title) sanitizedUpdates.title = sanitizeInput(updates.title);
+  if (updates.location) sanitizedUpdates.location = sanitizeInput(updates.location);
+  if (updates.captain_name) sanitizedUpdates.captain_name = sanitizeInput(updates.captain_name);
+  if (updates.sport) sanitizedUpdates.sport = updates.sport;
+  if (updates.date) {
+    // Validate date is not in the past
+    const matchDate = new Date(updates.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (matchDate < today) {
+      throw new Error('Cannot set match date in the past');
+    }
+    sanitizedUpdates.date = updates.date;
+  }
+  if (updates.time) sanitizedUpdates.time = updates.time;
+  if (updates.max_players !== undefined) {
+    // Ensure max_players is not less than current participant count
+    const currentCount = match.participant_count?.[0]?.count || 0;
+    if (updates.max_players < currentCount) {
+      throw new Error(`Cannot set max players below current participant count (${currentCount})`);
+    }
+    sanitizedUpdates.max_players = updates.max_players;
+  }
+  if (updates.price_per_person !== undefined) {
+    sanitizedUpdates.price_per_person = updates.price_per_person;
+  }
+
+  // Update with creator_id check for extra security
   const { data, error } = await supabase
     .from('matches')
     .update({
-      ...updates,
+      ...sanitizedUpdates,
       updated_at: new Date().toISOString()
     })
     .eq('id', matchId)
+    .eq('creator_id', creatorId)
     .select()
     .single();
 

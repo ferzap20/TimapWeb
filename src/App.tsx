@@ -29,7 +29,9 @@ import {
   getActiveMatchCount,
   getOnlinePlayerCount,
   updateMatch,
-  deleteMatch
+  deleteMatch,
+  MatchFullError,
+  UnauthorizedError
 } from './lib/api';
 import { supabase } from './lib/supabase';
 
@@ -84,7 +86,7 @@ function App() {
       matchesSubscription.unsubscribe();
       participantsSubscription.unsubscribe();
     };
-  }, []);
+  }, [selectedMatch?.id]); // ✅ FIXED: Added dependency to prevent memory leak
 
   const loadMatches = async () => {
     try {
@@ -183,25 +185,39 @@ function App() {
 
   const handleUpdateMatch = async (matchId: string, updates: any) => {
     try {
-      await updateMatch(matchId, updates);
+      await updateMatch(matchId, updates, userInfo.id); // ✅ FIXED: Pass userInfo.id
       await refreshSelectedMatch();
       await loadMatches();
       await loadStats();
     } catch (error) {
       console.error('Error updating match:', error);
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to update this match');
+      } else {
+        alert('Failed to update match. Please try again.');
+      }
       throw error;
     }
   };
 
   const handleDeleteMatch = async (matchId: string) => {
+    if (!confirm('Are you sure you want to delete this match? This action cannot be undone.')) {
+      return;
+    }
+
     try {
-      await deleteMatch(matchId);
+      await deleteMatch(matchId, userInfo.id); // ✅ FIXED: Pass userInfo.id
       setShowDetailsModal(false);
       setSelectedMatch(null);
       await loadMatches();
       await loadStats();
     } catch (error) {
       console.error('Error deleting match:', error);
+      if (error instanceof UnauthorizedError) {
+        alert('You are not authorized to delete this match');
+      } else {
+        alert('Failed to delete match. Please try again.');
+      }
       throw error;
     }
   };

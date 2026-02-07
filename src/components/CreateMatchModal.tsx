@@ -78,6 +78,16 @@ export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModal
       return;
     }
 
+    // ✅ FIXED: Validate date is not in the past
+    const selectedDate = new Date(formData.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      alert('Cannot create match in the past');
+      return;
+    }
+
     if (!formData.time) {
       alert('Time is required');
       return;
