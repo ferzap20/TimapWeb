@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Target, Share2, Zap, Plus, ClipboardList, LogOut } from 'lucide-react';
+import { Target, Share2, Zap, Plus, ClipboardList, LogOut, Menu, X } from 'lucide-react';
 import { CreateMatchModal } from './components/CreateMatchModal';
 import { MatchDetailsModal } from './components/MatchDetailsModal';
 import { MatchCreatedModal } from './components/MatchCreatedModal';
@@ -48,6 +48,7 @@ function App() {
   const [totalPlayerCount, setTotalPlayerCount] = useState(16);
   const [loading, setLoading] = useState(true);
   const [myMatchesLoading, setMyMatchesLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -388,25 +389,34 @@ function App() {
               <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded inline-flex items-left gap-1.5">LIVE</span>
             </div>
-            <nav aria-label="Main navigation" className="flex items-center gap-6">
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden text-gray-400 hover:text-white transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            <nav aria-label="Main navigation" className={`absolute md:static top-full left-0 right-0 md:right-auto md:top-auto bg-black md:bg-transparent border-b md:border-b-0 border-green-500/30 md:border-0 ${mobileMenuOpen ? 'block' : 'hidden md:flex'} flex-col md:flex-row items-start md:items-center gap-0 md:gap-6 p-4 md:p-0 w-full md:w-auto`}>
               {user && (
-                <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
+                <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
                   MY MATCHES
                 </button>
               )}
-              <button onClick={() => setCurrentPage('about')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
+              <button onClick={() => { setCurrentPage('about'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
                 ABOUT
               </button>
-              <button onClick={() => setCurrentPage('support')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
+              <button onClick={() => { setCurrentPage('support'); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase w-full md:w-auto text-left md:text-center py-2 md:py-0">
                 Support this project
               </button>
               {user ? (
-                <button onClick={signOut} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase inline-flex items-center gap-2">
+                <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase inline-flex items-center gap-2 py-2 md:py-0">
                   <LogOut size={16} />
                   SIGN OUT
                 </button>
               ) : (
-                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors text-sm uppercase">
+                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors text-sm uppercase">
                   SIGN IN
                 </button>
               )}
@@ -465,7 +475,7 @@ function App() {
             </div>
           </section>
 
-          <section className="relative py-12" aria-label="Features">
+          <section className="relative py-12 hidden" aria-label="Features">
             <div className="container mx-auto px-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 hover:border-green-500/50 transition-all duration-300">
