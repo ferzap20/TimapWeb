@@ -302,15 +302,34 @@ function App() {
 
   if (currentPage === 'mymatches') {
     return (
-      <MyMatchesPage
-        onBack={() => setCurrentPage('home')}
-        matches={myMatches}
-        loading={myMatchesLoading}
-        currentUserId={userInfo.id}
-        onMatchClick={handleMatchClick}
-        onUpdate={handleUpdateMatch}
-        onDelete={handleDeleteMatch}
-      />
+      <>
+        <MyMatchesPage
+          onBack={() => setCurrentPage('home')}
+          matches={myMatches}
+          loading={myMatchesLoading}
+          currentUserId={userInfo.id}
+          onMatchClick={handleMatchClick}
+          onUpdate={handleUpdateMatch}
+          onDelete={handleDeleteMatch}
+        />
+        <MatchDetailsModal
+          isOpen={showDetailsModal}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedMatch(null);
+          }}
+          match={selectedMatch}
+          onJoin={handleJoinMatch}
+          onAddPlayer={handleAddPlayer}
+          onUpdate={handleUpdateMatch}
+          onDelete={async (matchId) => {
+            await handleDeleteMatch(matchId);
+            await loadMyMatches();
+          }}
+          currentUserName={userInfo.name}
+          currentUserId={userInfo.id}
+        />
+      </>
     );
   }
 
