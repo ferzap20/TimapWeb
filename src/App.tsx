@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Target, Share2, Zap, Plus, ClipboardList } from 'lucide-react';
+import { Target, Share2, Zap, Plus, ClipboardList, LogOut } from 'lucide-react';
 import { CreateMatchModal } from './components/CreateMatchModal';
 import { MatchDetailsModal } from './components/MatchDetailsModal';
 import { MatchCreatedModal } from './components/MatchCreatedModal';
@@ -8,6 +8,7 @@ import { Button } from './components/Button';
 import { Footer } from './components/Footer';
 import { SearchFilters } from './components/SearchFilters';
 import { InstallPrompt } from './components/InstallPrompt';
+import { AuthModal } from './components/AuthModal';
 import { AboutPage } from './pages/AboutPage';
 import { SupportPage } from './pages/SupportPage';
 import { MyMatchesPage } from './pages/MyMatchesPage';
@@ -37,8 +38,10 @@ import { City } from './lib/cities';
 import { calculateHaversineDistance } from './lib/location';
 import { registerServiceWorker } from './lib/pwa';
 import { showToast } from './lib/toast';
+import { useAuth } from './lib/auth';
 
 function App() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
   const [myMatches, setMyMatches] = useState<MatchWithCount[]>([]);
   const [activeMatchCount, setActiveMatchCount] = useState(3);
@@ -46,6 +49,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [myMatchesLoading, setMyMatchesLoading] = useState(false);
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCreatedModal, setShowCreatedModal] = useState(false);
@@ -64,6 +68,9 @@ function App() {
   const reloadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   selectedMatchRef.current = selectedMatch;
+
+  const userId = user?.id || userInfo.id;
+  const userName = user?.email?.split('@')[0] || userInfo.name;
 
   const filteredMatches = useMemo(() => {
     let result = matches;
@@ -102,14 +109,14 @@ function App() {
   const loadMyMatches = useCallback(async () => {
     try {
       setMyMatchesLoading(true);
-      const data = await getMyMatches(userInfo.id);
+      const data = await getMyMatches(userId);
       setMyMatches(data);
     } catch (error) {
       console.error('Error loading my matches:', error);
     } finally {
       setMyMatchesLoading(false);
     }
-  }, [userInfo.id]);
+  }, [userId]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -198,8 +205,12 @@ function App() {
   }, [debouncedReload, loadMatches, loadStats]);
 
   const handleCreateMatch = async (data: CreateMatchData) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
-      const match = await createMatch(data, userInfo.id, userInfo.name);
+      const match = await createMatch(data, userId, userName);
       setCreatedMatch(match);
       setShowCreatedModal(true);
       await loadMatches();
@@ -222,12 +233,16 @@ function App() {
     }
   };
 
-  const handleJoinMatch = async (matchId: string, userName: string) => {
+  const handleJoinMatch = async (matchId: string, playerName: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
-      if (userName && userName !== userInfo.name) {
-        saveUserName(userName);
+      if (playerName && playerName !== userInfo.name) {
+        saveUserName(playerName);
       }
-      await joinMatch(matchId, userInfo.id, userName);
+      await joinMatch(matchId, userId, playerName);
       await refreshSelectedMatch(matchId);
       await loadMatches();
       await loadStats();
@@ -245,8 +260,12 @@ function App() {
   };
 
   const handleAddPlayer = async (matchId: string, playerName: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
-      await addPlayerToMatch(matchId, playerName, userInfo.id);
+      await addPlayerToMatch(matchId, playerName, userId);
       await refreshSelectedMatch(matchId);
       await loadMatches();
       await loadStats();
@@ -262,8 +281,12 @@ function App() {
   };
 
   const handleUpdateMatch = async (matchId: string, updates: Partial<CreateMatchData>) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
-      await updateMatch(matchId, updates, userInfo.id);
+      await updateMatch(matchId, updates, userId);
       await refreshSelectedMatch(matchId);
       await loadMatches();
       await loadStats();
@@ -279,8 +302,12 @@ function App() {
   };
 
   const handleDeleteMatch = async (matchId: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     try {
-      await deleteMatch(matchId, userInfo.id);
+      await deleteMatch(matchId, userId);
       setShowDetailsModal(false);
       setSelectedMatch(null);
       await loadMatches();
@@ -311,7 +338,7 @@ function App() {
           onBack={() => setCurrentPage('home')}
           matches={myMatches}
           loading={myMatchesLoading}
-          currentUserId={userInfo.id}
+          currentUserId={userId}
           onMatchClick={handleMatchClick}
           onUpdate={handleUpdateMatch}
           onDelete={handleDeleteMatch}
@@ -330,10 +357,22 @@ function App() {
             await handleDeleteMatch(matchId);
             await loadMyMatches();
           }}
-          currentUserName={userInfo.name}
-          currentUserId={userInfo.id}
+          currentUserName={userName}
+          currentUserId={userId}
         />
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
     );
   }
 
@@ -350,15 +389,27 @@ function App() {
               <span className="px-2 py-0.5 bg-green-500 text-black text-xs font-bold rounded inline-flex items-left gap-1.5">LIVE</span>
             </div>
             <nav aria-label="Main navigation" className="flex items-center gap-6">
-              <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
-                MY MATCHES
-              </button>
+              {user && (
+                <button onClick={() => { setCurrentPage('mymatches'); loadMyMatches(); }} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
+                  MY MATCHES
+                </button>
+              )}
               <button onClick={() => setCurrentPage('about')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
                 ABOUT
               </button>
               <button onClick={() => setCurrentPage('support')} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">
                 Support this project
               </button>
+              {user ? (
+                <button onClick={signOut} className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase inline-flex items-center gap-2">
+                  <LogOut size={16} />
+                  SIGN OUT
+                </button>
+              ) : (
+                <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-bold rounded-lg transition-colors text-sm uppercase">
+                  SIGN IN
+                </button>
+              )}
             </nav>
           </div>
         </header>
@@ -485,7 +536,7 @@ function App() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredMatches.map((match) => (
-                    <MatchCard key={match.id} match={match} onJoinClick={handleMatchClick} currentUserId={userInfo.id} />
+                    <MatchCard key={match.id} match={match} onJoinClick={handleMatchClick} currentUserId={userId} />
                   ))}
                 </div>
               )}
@@ -510,8 +561,8 @@ function App() {
           onAddPlayer={handleAddPlayer}
           onUpdate={handleUpdateMatch}
           onDelete={handleDeleteMatch}
-          currentUserName={userInfo.name}
-          currentUserId={userInfo.id}
+          currentUserName={userName}
+          currentUserId={userId}
         />
 
         <MatchCreatedModal
@@ -522,6 +573,8 @@ function App() {
           }}
           match={createdMatch}
         />
+
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       </div>
 
       <Footer />
