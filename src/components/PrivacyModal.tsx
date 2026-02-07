@@ -41,7 +41,7 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
 
         <div className="pt-4 border-t border-gray-700 mt-6">
           <p className="text-sm text-gray-400">
-            Contact: <span className="text-gray-300">support@timap.live</span>
+            Contact: <span className="text-gray-300">contact@timap.live</span>
           </p>
         </div>
       </div>
