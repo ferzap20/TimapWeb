@@ -11,8 +11,12 @@
  * - No cookies are used
  */
 
+import { CreateMatchData } from '../types/database';
+
 const USER_ID_KEY = 'timap_user_id';
 const USER_NAME_KEY = 'timap_user_name';
+const PENDING_MATCH_DATA_KEY = 'timap_pending_match_data';
+const PENDING_JOIN_DATA_KEY = 'timap_pending_join_data';
 
 /**
  * Generate a unique anonymous user ID
@@ -77,4 +81,52 @@ export function getUserInfo(): { id: string; name: string } {
     id: getUserId(),
     name: getUserName()
   };
+}
+
+/**
+ * Save pending match creation data
+ * Used when an unauthenticated user attempts to create a match
+ */
+export function setPendingMatchData(data: CreateMatchData): void {
+  localStorage.setItem(PENDING_MATCH_DATA_KEY, JSON.stringify(data));
+}
+
+/**
+ * Get pending match creation data
+ * Returns null if no pending data exists
+ */
+export function getPendingMatchData(): CreateMatchData | null {
+  const data = localStorage.getItem(PENDING_MATCH_DATA_KEY);
+  return data ? JSON.parse(data) : null;
+}
+
+/**
+ * Clear pending match creation data
+ */
+export function clearPendingMatchData(): void {
+  localStorage.removeItem(PENDING_MATCH_DATA_KEY);
+}
+
+/**
+ * Save pending join match data
+ * Used when an unauthenticated user attempts to join a match
+ */
+export function setPendingJoinData(matchId: string, playerName: string): void {
+  localStorage.setItem(PENDING_JOIN_DATA_KEY, JSON.stringify({ matchId, playerName }));
+}
+
+/**
+ * Get pending join match data
+ * Returns null if no pending data exists
+ */
+export function getPendingJoinData(): { matchId: string; playerName: string } | null {
+  const data = localStorage.getItem(PENDING_JOIN_DATA_KEY);
+  return data ? JSON.parse(data) : null;
+}
+
+/**
+ * Clear pending join match data
+ */
+export function clearPendingJoinData(): void {
+  localStorage.removeItem(PENDING_JOIN_DATA_KEY);
 }

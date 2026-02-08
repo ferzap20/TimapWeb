@@ -5,7 +5,7 @@
  * Includes sport selection with colored pills and validation.
  */
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Modal } from './Modal';
 import { Input } from './Input';
 import { Button } from './Button';
@@ -18,21 +18,30 @@ interface CreateMatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateMatchData) => Promise<void>;
+  initialData?: CreateMatchData | null;
 }
 
-export function CreateMatchModal({ isOpen, onClose, onSubmit }: CreateMatchModalProps) {
+export function CreateMatchModal({ isOpen, onClose, onSubmit, initialData }: CreateMatchModalProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateMatchData>({
-    title: '',
-    sport: 'football',
-    location: '',
-    date: '',
-    time: '',
-    max_players: 10,
-    captain_name: '',
-    price_per_person: 0,
-    is_private: false
-  });
+  const [formData, setFormData] = useState<CreateMatchData>(
+    initialData || {
+      title: '',
+      sport: 'football',
+      location: '',
+      date: '',
+      time: '',
+      max_players: 10,
+      captain_name: '',
+      price_per_person: 0,
+      is_private: false
+    }
+  );
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const handleOpenMaps = () => {
     const location = formData.location.trim();

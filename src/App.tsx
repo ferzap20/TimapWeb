@@ -15,7 +15,16 @@ import { MyMatchesPage } from './pages/MyMatchesPage';
 import logoAlone from './Images/logo_alone.png';
 import logo01 from './Images/logo01.png';
 import { Match, MatchWithCount, CreateMatchData, SportType } from './types/database';
-import { getUserInfo, setUserName as saveUserName } from './lib/storage';
+import {
+  getUserInfo,
+  setUserName as saveUserName,
+  getPendingMatchData,
+  clearPendingMatchData,
+  setPendingMatchData,
+  getPendingJoinData,
+  clearPendingJoinData,
+  setPendingJoinData
+} from './lib/storage';
 import {
   createMatch,
   getMatches,
@@ -63,6 +72,13 @@ function App() {
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
   const [selectedSport, setSelectedSport] = useState<SportType | null>(null);
+
+  const [pendingMatchData, setPendingMatchDataState] = useState<CreateMatchData | null>(() => {
+    return getPendingMatchData();
+  });
+  const [pendingJoinData, setPendingJoinDataState] = useState<{ matchId: string; playerName: string } | null>(() => {
+    return getPendingJoinData();
+  });
 
   const userInfo = useMemo(() => getUserInfo(), []);
   const selectedMatchRef = useRef(selectedMatch);
@@ -205,8 +221,38 @@ function App() {
     };
   }, [debouncedReload, loadMatches, loadStats]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    if (pendingMatchData) {
+      setShowAuthModal(false);
+      setShowCreateModal(true);
+    } else if (pendingJoinData) {
+      setShowAuthModal(false);
+      setShowDetailsModal(true);
+      if (selectedMatch?.id === pendingJoinData.matchId) {
+        setSelectedMatch(selectedMatch);
+      } else {
+        (async () => {
+          try {
+            const match = await getMatchById(pendingJoinData.matchId);
+            if (match) {
+              setSelectedMatch(match);
+            }
+          } catch (error) {
+            console.error('Error loading match for join:', error);
+          }
+        })();
+      }
+    }
+  }, [user]);
+
+
   const handleCreateMatch = async (data: CreateMatchData) => {
     if (!user) {
+      setPendingMatchData(data);
+      setPendingMatchDataState(data);
+      setShowCreateModal(false);
       setShowAuthModal(true);
       return;
     }
@@ -214,6 +260,8 @@ function App() {
       const match = await createMatch(data, userId, userName);
       setCreatedMatch(match);
       setShowCreatedModal(true);
+      clearPendingMatchData();
+      setPendingMatchDataState(null);
       await loadMatches();
       await loadStats();
     } catch (error) {
@@ -236,6 +284,8 @@ function App() {
 
   const handleJoinMatch = async (matchId: string, playerName: string) => {
     if (!user) {
+      setPendingJoinData(matchId, playerName);
+      setPendingJoinDataState({ matchId, playerName });
       setShowAuthModal(true);
       return;
     }
@@ -244,6 +294,8 @@ function App() {
         saveUserName(playerName);
       }
       await joinMatch(matchId, userId, playerName);
+      clearPendingJoinData();
+      setPendingJoinDataState(null);
       await refreshSelectedMatch(matchId);
       await loadMatches();
       await loadStats();
@@ -559,8 +611,13 @@ function App() {
 
         <CreateMatchModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            setShowCreateModal(false);
+            clearPendingMatchData();
+            setPendingMatchDataState(null);
+          }}
           onSubmit={handleCreateMatch}
+          initialData={pendingMatchData}
         />
 
         <MatchDetailsModal
