@@ -2,25 +2,6 @@
 
 A modern web application for finding and coordinating sports matches in real-time. Built with React, TypeScript, Vite, and Supabase.
 
-## 📋 Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Setup](#environment-setup)
-- [Available Scripts](#available-scripts)
-- [Project Structure](#project-structure)
-- [Usage](#usage)
-  - [Creating a Match](#creating-a-match)
-  - [Joining a Match](#joining-a-match)
-  - [Invite Links](#invite-links)
-- [Configuration](#configuration)
-- [Contributing](#contributing)
-- [License](#license)
-- [Support](#support)
-
 ## ✨ Features
 
 - **Real-time Match Discovery**: Browse and discover available sports matches in your area
