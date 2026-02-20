@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# Don't rewrite API requests (handled by api/.htaccess)
+RewriteRule ^api/ - [L]
+
+# Don't rewrite existing files/directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# SPA fallback: serve index.html for all other routes
+RewriteRule ^ index.html [L]

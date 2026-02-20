@@ -1,8 +1,8 @@
 /**
  * Database Type Definitions
  *
- * TypeScript interfaces for database tables and related types.
- * These types ensure type safety when working with Supabase queries.
+ * TypeScript interfaces for database collections and related types.
+ * These types ensure type safety when working with API responses.
  */
 
 // Sport types supported by the application

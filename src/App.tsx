@@ -31,7 +31,6 @@ import {
   updateMatch,
   deleteMatch
 } from './lib/api';
-import { supabase } from './lib/supabase';
 
 function App() {
   const [matches, setMatches] = useState<MatchWithCount[]>([]);
@@ -61,29 +60,13 @@ function App() {
       handleInviteLink(inviteCode);
     }
 
-    const matchesSubscription = supabase
-      .channel('matches_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => {
-        loadMatches();
-        loadStats();
-      })
-      .subscribe();
+    // Poll for updates every 10 seconds
+    const pollInterval = setInterval(() => {
+      loadMatches();
+      loadStats();
+    }, 10000);
 
-    const participantsSubscription = supabase
-      .channel('participants_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, () => {
-        loadMatches();
-        loadStats();
-        if (selectedMatch) {
-          refreshSelectedMatch();
-        }
-      })
-      .subscribe();
-
-    return () => {
-      matchesSubscription.unsubscribe();
-      participantsSubscription.unsubscribe();
-    };
+    return () => clearInterval(pollInterval);
   }, []);
 
   const loadMatches = async () => {
@@ -183,7 +166,7 @@ function App() {
 
   const handleUpdateMatch = async (matchId: string, updates: any) => {
     try {
-      await updateMatch(matchId, updates);
+      await updateMatch(matchId, updates, userInfo.id);
       await refreshSelectedMatch();
       await loadMatches();
       await loadStats();
@@ -195,7 +178,7 @@ function App() {
 
   const handleDeleteMatch = async (matchId: string) => {
     try {
-      await deleteMatch(matchId);
+      await deleteMatch(matchId, userInfo.id);
       setShowDetailsModal(false);
       setSelectedMatch(null);
       await loadMatches();
